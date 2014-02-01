@@ -159,7 +159,7 @@ public class Powerups {
 
 	// bugbug check for someone trying to pick someone up
 	static boolean MOVE_PASSENGER(MyPlayerBrain brain, Passenger p){
-		if(p.getCar() != null && !p.getName().equals(brain.getNext().getName()))
+		if(p.getCar() != null && (brain.getNext() == null || !p.getName().equals(brain.getNext().getName())))
 			return false;
 
 		return true;
