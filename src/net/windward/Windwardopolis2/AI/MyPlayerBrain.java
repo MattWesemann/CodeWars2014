@@ -163,6 +163,8 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
     // Target Passenger
     private Passenger target;
 
+    private Passenger skiptarget;
+
     // Pickup priority list
     private ArrayList<Passenger> pickup = new ArrayList<Passenger>();
 
@@ -270,6 +272,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 // IF THE GAME STATE CHANGES AT ALL, REEVALUATE OUR PATH
                 // OVERLY AGGRESSIVE -- RESULTS IN WAFFLING
                 //return;
+
                 if(status == STATUS.PASSENGER_DELIVERED ||
                         status == STATUS.PASSENGER_DELIVERED_AND_PICKED_UP ||
                         (status == STATUS.PASSENGER_PICKED_UP && plyrStatus.getLimo().getPassenger().equals(target)) ||
@@ -339,6 +342,17 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                                 }
                             }
                         }
+
+                        for (Player play : getPlayers()){
+                            if (play.getPickUp().contains(p)){
+                                if (play.getLimo().getPath().get(play.getLimo().getPath().size() - 1) == p.getLobby().getBusStop()){
+                                    if (SimpleAStar.CalculatePath(privateGameMap, privateMe.getLimo().getMapPosition(), p.getLobby().getBusStop()).size() < SimpleAStar.CalculatePath(privateGameMap, play.getLimo().getMapPosition(), p.getLobby().getBusStop()).size()){
+                                        skip = true;
+                                    }
+                                }
+                            }
+                        }
+
                         if(skip){
                             skip = false; // reset flag
                             continue;
@@ -347,6 +361,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                         // Lower tempCost correlates to better target
                         tempPath1 = SimpleAStar.CalculatePath(privateGameMap, privateMe.getLimo().getMapPosition(), p.getLobby().getBusStop());
                         tempPath2 = SimpleAStar.CalculatePath(privateGameMap, p.getLobby().getBusStop(), p.getDestination().getBusStop());
+
                         // If we have a passenger and they have an enemy at the potential target's location, skip that target
                         if(getMe().getLimo().getPassenger() != null){
                             boolean enemyAtTarget = false;
@@ -357,7 +372,9 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                                 continue;
                             }
                         }
+                        //actual algorithm.
                         tempCost = (tempPath1.size()*2+tempPath2.size())/p.getPointsDelivered();
+
                         if (currCost > tempCost){
                             currCost = tempCost;
                             target = p;
@@ -394,16 +411,18 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                     ptDest = pickup.get(0).getLobby().getBusStop();
                     break;
                 case PASSENGER_REFUSED_ENEMY:
+                    // Just take current passenger to next pick up
+                    status = STATUS.NO_PATH;
                     //add in random so no refuse loop
                     // TODO: Pick a passenger smartly? Or drop off smartly.
-                    java.util.List<Company> comps = getCompanies();
-                    while(ptDest == null) {
-                        int randCompany = rand.nextInt(comps.size());
-                        if (comps.get(randCompany) != getMe().getLimo().getPassenger().getDestination()) {
-                            ptDest = comps.get(randCompany).getBusStop();
-                            break;
-                        }
-                    }
+                    //java.util.List<Company> comps = getCompanies();
+                    //while(ptDest == null) {
+                    //    int randCompany = rand.nextInt(comps.size());
+                    //    if (comps.get(randCompany) != getMe().getLimo().getPassenger().getDestination()) {
+                    //        ptDest = comps.get(randCompany).getBusStop();
+                    //        break;
+                    //    }
+                    //}
                     break;
                 case PASSENGER_DELIVERED_AND_PICKED_UP:
                 case PASSENGER_PICKED_UP:
