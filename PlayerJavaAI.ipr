@@ -194,6 +194,7 @@
     <dictionary name="Matt">
       <words>
         <w>dest</w>
+        <w>mult</w>
         <w>powerups</w>
       </words>
     </dictionary>

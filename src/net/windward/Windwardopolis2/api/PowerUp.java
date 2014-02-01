@@ -163,6 +163,11 @@ public class PowerUp {
         return true;
     }
 
+	@Override
+	public String toString(){
+		 return card.toString();
+	}
+
     public static ArrayList<PowerUp> FromXml(Element elemPowerups, List<Company> companies, List<Passenger> passengers)
     {
         ArrayList<PowerUp> powerups = new ArrayList<PowerUp>();

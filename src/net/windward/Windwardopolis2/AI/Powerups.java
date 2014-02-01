@@ -33,7 +33,7 @@ public class Powerups {
 			case CHANGE_DESTINATION:
 				return CHANGE_DESTINATION(player);
 			case MULT_DELIVERY_QUARTER_SPEED:
-				return MULT_DELIVERY_QUARTER_SPEED(brain);
+				return MULT_DELIVERY_QUARTER_SPEED(brain, pass);
 			case ALL_OTHER_CARS_QUARTER_SPEED:
 				return ALL_OTHER_CARS_QUARTER_SPEED();
 			case STOP_CAR:
@@ -107,11 +107,13 @@ public class Powerups {
 		return true;
 	}
 
-	// bugbug add if we across map carrying somebody
 	static boolean RELOCATE_ALL_CARS(MyPlayerBrain brain){
-		if(brain.getMyPassenger() != null)
+		if(brain.getMyPassenger() != null)  {
+			if(brain.getMe().getLimo().getPath().size() > 128) {
+				return true;
+			}
 			return false;
-
+		}
 		return true;
 	}
 
@@ -136,11 +138,17 @@ public class Powerups {
 		return true;
 	}
 
-	// bugbug check for small distance
-	static boolean MULT_DELIVERY_QUARTER_SPEED(MyPlayerBrain brain){
+	static boolean MULT_DELIVERY_QUARTER_SPEED(MyPlayerBrain brain, Passenger pass){
 		if(!checkCoffee(brain))
 			return false;
-		  return false;
+
+		//if(brain.getMe().getLimo().getPath().size() > 15)
+			//return false;
+
+		if(pass == null)
+			 return false;
+
+		return true;
 	}
 
 	// bugbug check for other MULT_DELIVER_AT_COMPANY

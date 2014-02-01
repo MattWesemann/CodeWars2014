@@ -476,8 +476,11 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 getMe().getLimo().getPath().clear();
                 getMe().getLimo().getPath().addAll(path);
             }
+
+	        whosNext = null;
             if (pickup.size() > 0) {
                 getMe().getPickUp().clear();
+	            whosNext = pickup.get(0);
                 getMe().getPickUp().addAll(pickup);
             }
 
@@ -492,17 +495,39 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 		PowerUp pu2 = null;
 		Passenger pass2 = null;
 		Player play2 = null;
+		boolean shouldBreak = false;
 		for(PowerUp current : getPowerUpHand()) {
 			if(current.isOkToPlay()) {
-				for(Passenger pass : getPassengers()){
-					for(Player play : getPlayers()){
-						if(Powerups.checkPowerUp(this, current, play, pass)){
-							pu2 = current;
-							pass2 = pass;
-							play2 = play;
-							break;
-						}
+				if(current.getCard() == PowerUp.CARD.MULT_DELIVER_AT_COMPANY ||
+						current.getCard() == PowerUp.CARD.MULT_DELIVERING_PASSENGER ||
+						current.getCard() == PowerUp.CARD.MULT_DELIVERY_QUARTER_SPEED)  {
+
+					Passenger pass = getNext();
+					if(pass != null && Powerups.checkPowerUp(this, current, null, pass)){
+						pu2 = current;
+						pass2 = pass;
+						play2 = null;
+						break;
 					}
+
+				} else {
+					for(Passenger pass : getPassengers()){
+						for(Player play : getPlayers()){
+							if(Powerups.checkPowerUp(this, current, play, pass)){
+								pu2 = current;
+								pass2 = pass;
+								play2 = play;
+								shouldBreak = true;
+								break;
+							}
+						}
+
+						if(shouldBreak)
+							break;
+					}
+
+					if(shouldBreak)
+						break;
 				}
 			}
 		}
@@ -521,6 +546,12 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 				// select a card
 				PowerUp pu = getPowerUpDeck().get(0);
 				privatePowerUpDeck.remove(pu);
+
+				if(pu.getCard() == PowerUp.CARD.MULT_DELIVERY_QUARTER_SPEED){
+					continue;
+					//playCards.invoke(PlayerAIBase.CARD_ACTION.DISCARD, pu);
+				}
+
 				privatePowerUpHand.add(pu);
 				playCards.invoke(PlayerAIBase.CARD_ACTION.DRAW, pu);
 			}
