@@ -24,11 +24,9 @@ import java.util.ArrayList;
  * The sample C# AI. Start with this project but write your own code as this is a very simplistic implementation of the AI.
  */
 public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI {
-    // bugbug - put your team name here.
-    private static String NAME = "James Gosling";
+    private static String NAME = "Team 1";
 
-    // bugbug - put your school name here. Must be 11 letters or less (ie use MIT, not Massachussets Institute of Technology).
-    public static String SCHOOL = "Windward U.";
+    public static String SCHOOL = "CSM";
 
     private static Logger log = Logger.getLogger(IPlayerAI.class);
 
