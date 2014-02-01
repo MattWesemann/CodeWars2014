@@ -37,6 +37,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
      * The name of the player.
      */
     private String privateName;
+    private boolean gettingCoffee = false;
 
     public final String getName() {
         return privateName;
@@ -279,20 +280,28 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 // IF THE GAME STATE CHANGES AT ALL, REEVALUATE OUR PATH
                 // OVERLY AGGRESSIVE -- RESULTS IN WAFFLING
                 //return;
-                if(status == STATUS.PASSENGER_DELIVERED ||
+
+                // If a player invalidates our delivery, recalculate
+                if(getMe().getLimo().getPassenger() == null){
+                    if(status == STATUS.PASSENGER_PICKED_UP && plyrStatus.getLimo().getPassenger().equals(target)){
+                        status = STATUS.NO_PATH;
+                    }
+                }
+                else if(status == STATUS.PASSENGER_DELIVERED ||
                         status == STATUS.PASSENGER_DELIVERED_AND_PICKED_UP ||
-                        (status == STATUS.PASSENGER_PICKED_UP && plyrStatus.getLimo().getPassenger().equals(target)) ||
                         status == STATUS.POWER_UP_PLAYED){
-                    status = STATUS.NO_PATH;
+                    for(Passenger other : getMe().getLimo().getPassenger().getEnemies()){
+                        if(other.getLobby() == null){
+                            continue;
+                        }
+                        if(other.getLobby().getName().equals(getMe().getLimo().getPassenger().getDestination().getName())){
+                            status = STATUS.NO_PATH;
+                        }
+                    }
                 }
                 else{
                     return;
                 }
-            }
-
-            if(status == PlayerAIBase.STATUS.UPDATE) {
-                MaybePlayPowerUp();
-                return;
             }
 
             DisplayStatus(status, plyrStatus);
@@ -301,6 +310,24 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 log.info("gameStatus( " + status + " )");
 
             Point ptDest = null;
+
+            if(gettingCoffee){
+                return;
+            }
+
+            if(status == PlayerAIBase.STATUS.UPDATE) {
+                MaybePlayPowerUp();
+                Point maybeCoffee = getNearestCoffeeStore();
+                if(getMe().getLimo().getPassenger() == null && CalculatePathPlus1(getMe(), maybeCoffee).size() < (9 - 3 * getMe().getLimo().getCoffeeServings())){
+                    ptDest = maybeCoffee;
+                    gettingCoffee = true;
+                    log.info("Making a detour for coffee!");
+                }
+                else {
+                    return;
+                }
+            }
+
             java.util.ArrayList<Passenger> pickup = new java.util.ArrayList<Passenger>();
             switch (status) {
                 case NO_PATH:
@@ -318,11 +345,6 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                         if(continueCurrentCourse){
                             break;
                         }
-                    }
-                    else if(0 >= getMe().getLimo().getCoffeeServings()){
-                        log.info("Had no path ... but we need coffee!");
-                        ptDest = getNearestCoffeeStore();
-                        break;
                     }
                     target = null;
                     double currCost = Double.MAX_VALUE;
@@ -405,14 +427,17 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 case PASSENGER_REFUSED_ENEMY:
                     //add in random so no refuse loop
                     // TODO: Pick a passenger smartly? Or drop off smartly.
-                    java.util.List<Company> comps = getCompanies();
+                    /*java.util.List<Company> comps = getCompanies();
                     while(ptDest == null) {
                         int randCompany = rand.nextInt(comps.size());
                         if (comps.get(randCompany) != getMe().getLimo().getPassenger().getDestination()) {
                             ptDest = comps.get(randCompany).getBusStop();
                             break;
                         }
-                    }
+                    }*/
+
+	                status = STATUS.NO_PATH;
+
                     break;
                 case PASSENGER_DELIVERED_AND_PICKED_UP:
                 case PASSENGER_PICKED_UP:
@@ -451,12 +476,6 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                     break;
             }
 
-            // emergency coffee override
-            if(getMe().getLimo().getCoffeeServings() <= 0){
-                ptDest = getNearestCoffeeStore();
-                log.info("EMERGENCY COFFEE OVERRIDE");
-            }
-
             // may be another status
             if(ptDest == null)
                 return;
@@ -483,7 +502,9 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 	            whosNext = pickup.get(0);
                 getMe().getPickUp().addAll(pickup);
             }
-
+            if(getMe().getPickUp().size() < 1){
+                log.debug("Sent Pickup<> with no entries!");
+            }
             sendOrders.invoke("move", path, pickup);
         } catch (RuntimeException ex) {
             ex.printStackTrace();
@@ -570,6 +591,84 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
         }
         return chosen.get(chosen.size()-1);
     }
+
+//    private Point getBestPickup(){
+//        Point ptDest = null;
+//        if(getMe().getLimo().getPassenger() != null){
+//            //System.out.println("Continue to passenger destination");
+//            ptDest = getMe().getLimo().getPassenger().getDestination().getBusStop();
+//            boolean continueCurrentCourse = true;
+//            for(Passenger waiting : getMe().getLimo().getPassenger().getDestination().getPassengers()){
+//                continueCurrentCourse = !getMe().getLimo().getPassenger().getEnemies().contains(waiting);
+//                if(!continueCurrentCourse){
+//                    log.info("(!) Enemy detected at destination!");
+//                    break;
+//                }
+//            }
+//            if(continueCurrentCourse){
+//                ArrayList<Point> curr = getMe().getLimo().getPath();
+//                return curr.get(curr.size()-1);
+//            }
+//        }
+//        target = null;
+//        double currCost = Double.MAX_VALUE;
+//        double tempCost = 0;
+//        ArrayList<Point> tempPath1 = null;
+//        ArrayList<Point> tempPath2 = null;
+//        ArrayList<Point> finalPath = null;
+//        boolean skip = false;
+//        for (Passenger p : getPassengers()){
+//            // Check if we've delivered them before or they're out of destinations or they're in transit
+//            if(getMe().getPassengersDelivered().contains(p) || p.getDestination() == null || p.getLobby() == null){
+//                continue;
+//            }
+//            // Check for enemies at destination
+//            if (p.getEnemies().size() > 0){
+//                for (Passenger e : p.getEnemies()){
+//                    if(p.getDestination() != null &&
+//                            (( e.getLobby() != null && e.getLobby().equals(p.getDestination())) ||
+//                                    ( e.getLobby() == null && e.getDestination().equals(p.getDestination()) ) )
+//                            ){
+//                        skip = true;
+//                        break;
+//                    }
+//                }
+//            }
+//            if(skip){
+//                skip = false; // reset flag
+//                continue;
+//            }
+//            // Distance of path (shorter better) divided by value of target (higher better)
+//            // Lower tempCost correlates to better target
+//            tempPath1 = SimpleAStar.CalculatePath(privateGameMap, privateMe.getLimo().getMapPosition(), p.getLobby().getBusStop());
+//            tempPath2 = SimpleAStar.CalculatePath(privateGameMap, p.getLobby().getBusStop(), p.getDestination().getBusStop());
+//            // If we have a passenger and they have an enemy at the potential target's location, skip that target
+//            if(getMe().getLimo().getPassenger() != null){
+//                boolean enemyAtTarget = false;
+//                for(Passenger waiting : p.getLobby().getPassengers()){
+//                    enemyAtTarget = getMe().getLimo().getPassenger().getEnemies().contains(waiting);
+//                }
+//                if(enemyAtTarget){
+//                    continue;
+//                }
+//            }
+//            tempCost = (tempPath1.size()*2+tempPath2.size())/p.getPointsDelivered();
+//            if (currCost > tempCost){
+//                currCost = tempCost;
+//                target = p;
+//                finalPath = tempPath1;
+//                finalPath.addAll(tempPath2);
+//            }
+//        }
+//        if(target != null && target.getLobby() != null){
+//            log.info("Chose a new target: " + target.getName() + " at " + target.getLobby());
+//            myPath = finalPath;
+//            //System.out.println(myPath.size());
+//            ptDest = target.getLobby().getBusStop();
+//            pickup.add(target);
+//        }
+//        log.info("No path, and no viable target found.");
+//    }
 
 	private void MaybePlayPowerUp2() {
         if ((getPowerUpHand().size() != 0) && (rand.nextInt(50) < 30))
