@@ -272,7 +272,8 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 //return;
                 if(status == STATUS.PASSENGER_DELIVERED ||
                         status == STATUS.PASSENGER_DELIVERED_AND_PICKED_UP ||
-                        (status == STATUS.PASSENGER_PICKED_UP && plyrStatus.getLimo().getPassenger().equals(target))){
+                        (status == STATUS.PASSENGER_PICKED_UP && plyrStatus.getLimo().getPassenger().equals(target)) ||
+                        status == STATUS.POWER_UP_PLAYED){
                     status = STATUS.NO_PATH;
                 }
                 else{
@@ -311,6 +312,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                     }
                     else if(0 >= getMe().getLimo().getCoffeeServings()){
                         log.info("Had no path ... but we need coffee!");
+                        ptDest = getNearestCoffeeStore();
                         break;
                     }
                     target = null;
@@ -363,14 +365,14 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                             finalPath.addAll(tempPath2);
                         }
                     }
-                    log.info("Chose a new target");
                     if(target != null && target.getLobby() != null){
-                        log.info("Target found waiting");
+                        log.info("Chose a new target: " + target.getName() + " at " + target.getLobby());
                         myPath = finalPath;
                         //System.out.println(myPath.size());
                         ptDest = target.getLobby().getBusStop();
                         pickup.add(target);
                     }
+                    log.info("No path, and no viable target found.");
                     break;
                 case PASSENGER_NO_ACTION:
                     if (getMe().getLimo().getPassenger() == null) {
@@ -410,7 +412,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                     break;
 
             }
-log.info(getMe().getLimo().getCoffeeServings());
+
             // coffee store override
             switch (status)
             {
@@ -418,9 +420,9 @@ log.info(getMe().getLimo().getCoffeeServings());
                 case PASSENGER_DELIVERED:
                 case PASSENGER_ABANDONED:
                     if (getMe().getLimo().getCoffeeServings() <= 0) {
+                        log.info("Need coffee! Ran out on delivery.");
                         ptDest = getNearestCoffeeStore();
                     }
-                    log.info("Need coffee! Ran out on delivery.");
                     break;
                 case PASSENGER_REFUSED_NO_COFFEE:
                 case PASSENGER_DELIVERED_AND_PICK_UP_REFUSED:
@@ -438,6 +440,12 @@ log.info(getMe().getLimo().getCoffeeServings());
                 default:
                     log.info("Coffee switch fell to default.");
                     break;
+            }
+
+            // emergency coffee override
+            if(getMe().getLimo().getCoffeeServings() <= 0){
+                ptDest = getNearestCoffeeStore();
+                log.info("EMERGENCY COFFEE OVERRIDE");
             }
 
             // may be another status
