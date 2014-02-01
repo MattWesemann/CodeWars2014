@@ -123,6 +123,11 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 
     private void setPowerUpHand(ArrayList<PowerUp> value) { privatePowerUpHand = value; }
 
+	private PowerUp powerPlaying;
+	public final PowerUp getPlaying() { return powerPlaying; }
+
+	private void setPlaying(PowerUp value) { powerPlaying = value; }
+
     /**
      * Me (my player object).
      */
@@ -141,10 +146,16 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
      */
     private Passenger privateMyPassenger;
 
+	private Passenger whosNext;
+
     public final Passenger getMyPassenger() { return privateMyPassenger; }
 
     private void setMyPassenger(Passenger value) { privateMyPassenger = value; }
 
+
+	public final Passenger getNext() { return whosNext; }
+
+	private void setNext(Passenger value) { whosNext = value; }
 
     private PlayerAIBase.PlayerOrdersEvent sendOrders;
 
@@ -340,7 +351,47 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
         }
     }
 
-    private void MaybePlayPowerUp() {
+	private void MaybePlayPowerUp() {
+		// can we play one?
+		PowerUp pu2 = null;
+		Passenger pass2 = null;
+		Player play2 = null;
+		for(PowerUp current : getPowerUpHand()) {
+			if(current.isOkToPlay()) {
+				for(Passenger pass : getPassengers()){
+					for(Player play : getPlayers()){
+						if(Powerups.checkPowerUp(this, current, play, pass)){
+							pu2 = current;
+							pass2 = pass;
+							play2 = play;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (pu2 != null)  {
+			if (log.isInfoEnabled())
+				log.info("Request play card " + pu2);
+
+			Powerups.setAndHandlePowerUp(this, pu2, play2, pass2);
+			playCards.invoke(PlayerAIBase.CARD_ACTION.PLAY, pu2);
+			privatePowerUpHand.remove(pu2);
+		}
+
+		if (getPowerUpHand().size() < getMe().getMaxCardsInHand() && getPowerUpDeck().size() > 0) {
+			for (int index = 0; index < getMe().getMaxCardsInHand() - getPowerUpHand().size() && getPowerUpDeck().size() > 0; index++) {
+				// select a card
+				PowerUp pu = getPowerUpDeck().get(0);
+				privatePowerUpDeck.remove(pu);
+				privatePowerUpHand.add(pu);
+				playCards.invoke(PlayerAIBase.CARD_ACTION.DRAW, pu);
+			}
+		}
+	}
+
+    private void MaybePlayPowerUp2() {
         if ((getPowerUpHand().size() != 0) && (rand.nextInt(50) < 30))
             return;
         // not enough, draw
