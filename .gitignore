@@ -4,5 +4,8 @@
 *.jar
 *.war
 *.ear
+*.ipr
+*.ipl
+*.iws
 out/
 Thumbs.db
