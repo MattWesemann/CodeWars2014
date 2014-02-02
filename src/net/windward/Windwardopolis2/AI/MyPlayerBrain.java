@@ -260,6 +260,9 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
     }
 
 	public void handleCoffee(PlayerAIBase.STATUS status){
+		if(gettingCoffee && status != STATUS.NO_PATH)
+            return;
+
 		Point ptDest = getNearestCoffeeStore();
 		gettingCoffee = true;
 		log.info("Making a b-line coffee!");
@@ -352,6 +355,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 					ptDest = cof.get(randCof).getBusStop();
 					break;
 				case COFFEE_STORE_CAR_RESTOCKED:
+					gettingCoffee = false;
 					pickup = AllPickups(getMe(), getPassengers());
 					if (pickup.size() == 0)
 						break;
