@@ -297,67 +297,57 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 				log.info("gameStatus( " + status + " )");
 
 			Point ptDest = null;
-			java.util.ArrayList<Passenger> pickup = new java.util.ArrayList<Passenger>();
+			java.util.List<Passenger> pickup = new java.util.ArrayList<Passenger>();
 			switch (status) {
 				case NO_PATH:
-                    
+                    pickup.add(getBestPickup());
+                    doSend(status, getBestPickup().getLobby().getBusStop(), pickup);
+                    break;
 				case PASSENGER_NO_ACTION:
-					if (getMe().getLimo().getPassenger() == null) {
-						pickup = AllPickups(plyrStatus, getPassengers());
-						ptDest = pickup.get(0).getLobby().getBusStop();
-					} else {
-						ptDest = getMe().getLimo().getPassenger().getDestination().getBusStop();
-					}
-					break;
+                    pickup.add(getBestPickup());
+                    doSend(status, getBestPickup().getLobby().getBusStop(), pickup);
+                    break;
 				case PASSENGER_DELIVERED:
 				case PASSENGER_ABANDONED:
-					pickup = AllPickups(getMe(), getPassengers());
-					ptDest = pickup.get(0).getLobby().getBusStop();
-					break;
+                    pickup.add(getBestPickup());
+                    doSend(status, getBestPickup().getLobby().getBusStop(), pickup);
+                    break;
 				case PASSENGER_REFUSED_ENEMY:
-					//add in random so no refuse loop
-					java.util.List<Company> comps = getCompanies();
-					while(ptDest == null) {
-						int randCompany = rand.nextInt(comps.size());
-						if (comps.get(randCompany) != getMe().getLimo().getPassenger().getDestination()) {
-							ptDest = comps.get(randCompany).getBusStop();
-							break;
-						}
-					}
-					break;
+                    pickup.add(getBestPickup());
+                    doSend(status, getBestPickup().getLobby().getBusStop(), pickup);
+                    break;
 				case PASSENGER_DELIVERED_AND_PICKED_UP:
 				case PASSENGER_PICKED_UP:
-					pickup = AllPickups(getMe(), getPassengers());
-					ptDest = getMe().getLimo().getPassenger().getDestination().getBusStop();
+					doSend(status, getMe().getLimo().getPassenger().getDestination().getBusStop(), getMe().getLimo().getPassenger().getDestination().getPassengers());
 					break;
 
 			}
 
 			// coffee store override
-			switch (status)
-			{
-				case PASSENGER_DELIVERED_AND_PICKED_UP:
-				case PASSENGER_DELIVERED:
-				case PASSENGER_ABANDONED:
-					if (getMe().getLimo().getCoffeeServings() <= 0) {
-						java.util.List<CoffeeStore> cof = getCoffeeStores();
-						int randCof = rand.nextInt(cof.size());
-						ptDest = cof.get(randCof).getBusStop();
-					}
-					break;
-				case PASSENGER_REFUSED_NO_COFFEE:
-				case PASSENGER_DELIVERED_AND_PICK_UP_REFUSED:
-					java.util.List<CoffeeStore> cof = getCoffeeStores();
-					int randCof = rand.nextInt(cof.size());
-					ptDest = cof.get(randCof).getBusStop();
-					break;
-				case COFFEE_STORE_CAR_RESTOCKED:
-					pickup = AllPickups(getMe(), getPassengers());
-					if (pickup.size() == 0)
-						break;
-					ptDest = pickup.get(0).getLobby().getBusStop();
-					break;
-			}
+//			switch (status)
+//			{
+//				case PASSENGER_DELIVERED_AND_PICKED_UP:
+//				case PASSENGER_DELIVERED:
+//				case PASSENGER_ABANDONED:
+//					if (getMe().getLimo().getCoffeeServings() <= 0) {
+//						java.util.List<CoffeeStore> cof = getCoffeeStores();
+//						int randCof = rand.nextInt(cof.size());
+//						ptDest = cof.get(randCof).getBusStop();
+//					}
+//					break;
+//				case PASSENGER_REFUSED_NO_COFFEE:
+//				case PASSENGER_DELIVERED_AND_PICK_UP_REFUSED:
+//					java.util.List<CoffeeStore> cof = getCoffeeStores();
+//					int randCof = rand.nextInt(cof.size());
+//					ptDest = cof.get(randCof).getBusStop();
+//					break;
+//				case COFFEE_STORE_CAR_RESTOCKED:
+//					pickup = AllPickups(getMe(), getPassengers());
+//					if (pickup.size() == 0)
+//						break;
+//					ptDest = pickup.get(0).getLobby().getBusStop();
+//					break;
+//			}
 
 			// may be another status
 			if(ptDest == null)
@@ -383,7 +373,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 				getMe().getPickUp().addAll(pickup);
 			}
 
-			sendOrders.invoke("move", path, pickup);
+			sendOrders.invoke("move", path, (ArrayList<Passenger>) pickup);
 		} catch (RuntimeException ex) {
 			ex.printStackTrace();
 		}
@@ -672,7 +662,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
         }
     }
 
-	private void doSend(PlayerAIBase.STATUS status, Point ptDest, ArrayList<Passenger> pickup) {
+	private void doSend(PlayerAIBase.STATUS status, Point ptDest, java.util.List<Passenger> pickup) {
 		if(ptDest != null)
 			DisplayOrders(ptDest);
 
@@ -700,7 +690,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 		if(getMe().getPickUp().size() < 1){
 			log.debug("Sent Pickup<> with no entries!");
 		}
-		sendOrders.invoke("move", path, pickup);
+		sendOrders.invoke("move", path, (ArrayList<Passenger>) pickup);
 	}
 
 	private void MaybePlayPowerUp() {
@@ -783,6 +773,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
         }
         return chosen.get(chosen.size()-1);
     }
+
 
     private Passenger getBestPickup(){
         Passenger target = null;
