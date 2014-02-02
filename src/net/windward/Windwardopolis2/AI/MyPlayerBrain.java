@@ -293,6 +293,7 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 			java.util.ArrayList<Passenger> pickup = new java.util.ArrayList<Passenger>();
 			switch (status) {
 				case NO_PATH:
+                    
 				case PASSENGER_NO_ACTION:
 					if (getMe().getLimo().getPassenger() == null) {
 						pickup = AllPickups(plyrStatus, getPassengers());
@@ -745,8 +746,8 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
         return chosen.get(chosen.size()-1);
     }
 
-//    private Point getBestPickup(){
-//        Point ptDest = null;
+    private Passenger getBestPickup(){
+        Passenger target = null;
 //        if(getMe().getLimo().getPassenger() != null){
 //            //System.out.println("Continue to passenger destination");
 //            ptDest = getMe().getLimo().getPassenger().getDestination().getBusStop();
@@ -763,65 +764,58 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 //                return curr.get(curr.size()-1);
 //            }
 //        }
-//        target = null;
-//        double currCost = Double.MAX_VALUE;
-//        double tempCost = 0;
-//        ArrayList<Point> tempPath1 = null;
-//        ArrayList<Point> tempPath2 = null;
-//        ArrayList<Point> finalPath = null;
-//        boolean skip = false;
-//        for (Passenger p : getPassengers()){
-//            // Check if we've delivered them before or they're out of destinations or they're in transit
-//            if(getMe().getPassengersDelivered().contains(p) || p.getDestination() == null || p.getLobby() == null){
-//                continue;
-//            }
-//            // Check for enemies at destination
-//            if (p.getEnemies().size() > 0){
-//                for (Passenger e : p.getEnemies()){
-//                    if(p.getDestination() != null &&
-//                            (( e.getLobby() != null && e.getLobby().equals(p.getDestination())) ||
-//                                    ( e.getLobby() == null && e.getDestination().equals(p.getDestination()) ) )
-//                            ){
-//                        skip = true;
-//                        break;
-//                    }
-//                }
-//            }
-//            if(skip){
-//                skip = false; // reset flag
-//                continue;
-//            }
-//            // Distance of path (shorter better) divided by value of target (higher better)
-//            // Lower tempCost correlates to better target
-//            tempPath1 = SimpleAStar.CalculatePath(privateGameMap, privateMe.getLimo().getMapPosition(), p.getLobby().getBusStop());
-//            tempPath2 = SimpleAStar.CalculatePath(privateGameMap, p.getLobby().getBusStop(), p.getDestination().getBusStop());
-//            // If we have a passenger and they have an enemy at the potential target's location, skip that target
-//            if(getMe().getLimo().getPassenger() != null){
-//                boolean enemyAtTarget = false;
-//                for(Passenger waiting : p.getLobby().getPassengers()){
-//                    enemyAtTarget = getMe().getLimo().getPassenger().getEnemies().contains(waiting);
-//                }
-//                if(enemyAtTarget){
-//                    continue;
-//                }
-//            }
-//            tempCost = (tempPath1.size()*2+tempPath2.size())/p.getPointsDelivered();
-//            if (currCost > tempCost){
-//                currCost = tempCost;
-//                target = p;
-//                finalPath = tempPath1;
-//                finalPath.addAll(tempPath2);
-//            }
-//        }
-//        if(target != null && target.getLobby() != null){
-//            log.info("Chose a new target: " + target.getName() + " at " + target.getLobby());
-//            myPath = finalPath;
-//            //System.out.println(myPath.size());
-//            ptDest = target.getLobby().getBusStop();
-//            pickup.add(target);
-//        }
-//        log.info("No path, and no viable target found.");
-//    }
+        target = null;
+        double currCost = Double.MAX_VALUE;
+        double tempCost = 0;
+        ArrayList<Point> tempPath1 = null;
+        ArrayList<Point> tempPath2 = null;
+        ArrayList<Point> finalPath = null;
+        boolean skip = false;
+        for (Passenger p : getPassengers()){
+            // Check if we've delivered them before or they're out of destinations or they're in transit
+            if(getMe().getPassengersDelivered().contains(p) || p.getDestination() == null || p.getLobby() == null){
+                continue;
+            }
+            // Check for enemies at destination
+            if (p.getEnemies().size() > 0){
+                for (Passenger e : p.getEnemies()){
+                    if(p.getDestination() != null &&
+                            (( e.getLobby() != null && e.getLobby().equals(p.getDestination())) ||
+                                    ( e.getLobby() == null && e.getDestination().equals(p.getDestination()) ) )
+                            ){
+                        skip = true;
+                        break;
+                    }
+                }
+            }
+            if(skip){
+                skip = false; // reset flag
+                continue;
+            }
+            // Distance of path (shorter better) divided by value of target (higher better)
+            // Lower tempCost correlates to better target
+            tempPath1 = SimpleAStar.CalculatePath(privateGameMap, privateMe.getLimo().getMapPosition(), p.getLobby().getBusStop());
+            tempPath2 = SimpleAStar.CalculatePath(privateGameMap, p.getLobby().getBusStop(), p.getDestination().getBusStop());
+            // If we have a passenger and they have an enemy at the potential target's location, skip that target
+            if(getMe().getLimo().getPassenger() != null){
+                boolean enemyAtTarget = false;
+                for(Passenger waiting : p.getLobby().getPassengers()){
+                    enemyAtTarget = getMe().getLimo().getPassenger().getEnemies().contains(waiting);
+                }
+                if(enemyAtTarget){
+                    continue;
+                }
+            }
+            tempCost = (tempPath1.size()*2+tempPath2.size())/p.getPointsDelivered();
+            if (currCost > tempCost){
+                currCost = tempCost;
+                target = p;
+                finalPath = tempPath1;
+                finalPath.addAll(tempPath2);
+            }
+        }
+        return target;
+    }
 
 	private void MaybePlayPowerUp2() {
         if ((getPowerUpHand().size() != 0) && (rand.nextInt(50) < 30))
