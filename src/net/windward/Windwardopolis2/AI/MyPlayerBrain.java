@@ -292,6 +292,10 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 
 			if(status == PlayerAIBase.STATUS.UPDATE) {
 				MaybePlayPowerUp();
+				Point maybeCoffee = getNearestCoffeeStore();
+				if(getMe().getLimo().getPassenger() == null && CalculatePathPlus1(getMe(), maybeCoffee).size() < (9 - 3 * getMe().getLimo().getCoffeeServings())){
+					handleCoffee(status);
+				}
 				return;
 			}
 
