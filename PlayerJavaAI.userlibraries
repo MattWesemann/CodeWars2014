@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eclipse-userlibraries>
+  <library name="lib">
+    <archive path="C:/src/CodeWars2014/lib/jaxen.jar" />
+    <archive path="C:/src/CodeWars2014/lib/dom4j-1.6.1.jar" />
+    <archive path="C:/src/CodeWars2014/lib/log4j.jar" />
+  </library>
+</eclipse-userlibraries>
+

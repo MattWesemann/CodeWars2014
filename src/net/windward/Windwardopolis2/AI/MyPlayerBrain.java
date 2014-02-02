@@ -282,6 +282,19 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 			// if you want to act on other players arriving at bus stops, you need to remove this. But make sure you use Me, not
 			// plyrStatus for the Player you are updatiing (particularly to determine what tile to start your path from).
 			if (plyrStatus != getMe()) {
+
+				switch (status) {
+					case PASSENGER_PICKED_UP:
+						if(plyrStatus.getLimo().getPassenger().getName().equals(whosNext.getName())){
+							pickup.add(getBestPickup());
+							doSend(status, getBestPickup().getLobby().getBusStop(), pickup);
+						}
+						break;
+					case POWER_UP_PLAYED:
+						//if(whosNext.getDestination().getBusStop().equals())
+
+						break;
+				}
 				return;
 			}
 
@@ -290,8 +303,16 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 				return;
 			}
 
+			if(getMe().getLimo().getPassenger() != null){
+				doSend(status, getMe().getLimo().getPassenger().getDestination().getBusStop(), null);
+			}
+
 			if(status == PlayerAIBase.STATUS.UPDATE) {
 				MaybePlayPowerUp();
+
+				if(getMe().getLimo().getCoffeeServings() == 3)
+					return;
+
 				Point maybeCoffee = getNearestCoffeeStore();
 				if(getMe().getLimo().getPassenger() == null && CalculatePathPlus1(getMe(), maybeCoffee).size() < (9 - 3 * getMe().getLimo().getCoffeeServings())){
 					handleCoffee(status);
@@ -333,8 +354,8 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 
 			// coffee store override
 
-//			switch (status)
-//			{
+			switch (status)
+			{
 //				case PASSENGER_DELIVERED_AND_PICKED_UP:
 //				case PASSENGER_DELIVERED:
 //				case PASSENGER_ABANDONED:
@@ -350,13 +371,14 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 //					int randCof = rand.nextInt(cof.size());
 //					ptDest = cof.get(randCof).getBusStop();
 //					break;
-//				case COFFEE_STORE_CAR_RESTOCKED:
+				case COFFEE_STORE_CAR_RESTOCKED:
+					gettingCoffee = false;
 //					pickup = AllPickups(getMe(), getPassengers());
 //					if (pickup.size() == 0)
 //						break;
 //					ptDest = pickup.get(0).getLobby().getBusStop();
-//					break;
-//			}
+					break;
+			}
 
 
 
@@ -661,6 +683,8 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 		if(pickup == null)
 			pickup = new ArrayList<Passenger>();
 
+		pickup.addAll(AllPickups(getMe(), getPassengers()));
+
 		// get the path from where we are to the dest.
 		java.util.ArrayList<Point> path = new ArrayList<Point>();
 		if(ptDest != null)
@@ -838,6 +862,9 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
                 finalPath.addAll(tempPath2);
             }
         }
+
+	    log.debug(target.getDestination().getName());
+
         return target;
     }
 
