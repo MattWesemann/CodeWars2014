@@ -259,8 +259,13 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
         }
     }
 
+	public void handleCoffee(PlayerAIBase.STATUS status){
+		Point ptDest = getNearestCoffeeStore();
+		gettingCoffee = true;
+		log.info("Making a b-line coffee!");
 
-	private Company heading;
+
+	}
 
 
 	public final void GameStatus(PlayerAIBase.STATUS status, Player plyrStatus) {
@@ -277,7 +282,9 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
 				return;
 			}
 
-
+			if(getMe().getLimo().getCoffeeServings() == 0){
+				handleCoffee(status);
+			}
 
 			if(status == PlayerAIBase.STATUS.UPDATE) {
 				MaybePlayPowerUp();
@@ -663,6 +670,37 @@ public class MyPlayerBrain implements net.windward.Windwardopolis2.AI.IPlayerAI 
             ex.printStackTrace();
         }
     }
+
+	private void doSend(PlayerAIBase.STATUS status, Point ptDest, ArrayList<Passenger> pickup) {
+		if(ptDest != null)
+			DisplayOrders(ptDest);
+
+		// get the path from where we are to the dest.
+		java.util.ArrayList<Point> path = new ArrayList<Point>();
+		if(ptDest != null)
+			path = CalculatePathPlus1(getMe(), ptDest);
+
+		if (log.isDebugEnabled()) {
+			log.debug(status + "; Path:" + (path.size() > 0 ? path.get(0).toString() : "{n/a}") + "-" + (path.size() > 0 ? path.get(path.size()-1).toString() : "{n/a}") + ", " + path.size() + " steps; Pickup:" + (pickup.size() == 0 ? "{none}" : pickup.get(0).getName()) + ", " + pickup.size() + " total");
+		}
+
+		// update our saved Player to match new settings
+		if (path.size() > 0) {
+			getMe().getLimo().getPath().clear();
+			getMe().getLimo().getPath().addAll(path);
+		}
+
+		whosNext = null;
+		if (pickup.size() > 0) {
+			getMe().getPickUp().clear();
+			whosNext = pickup.get(0);
+			getMe().getPickUp().addAll(pickup);
+		}
+		if(getMe().getPickUp().size() < 1){
+			log.debug("Sent Pickup<> with no entries!");
+		}
+		sendOrders.invoke("move", path, pickup);
+	}
 
 	private void MaybePlayPowerUp() {
 		// can we play one?
